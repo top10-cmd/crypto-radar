@@ -4,6 +4,7 @@ import logging
 from typing import Dict
 from aiohttp import ClientSession
 from aiogram import Bot, Dispatcher, html
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.filters import CommandStart
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -11,7 +12,11 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = int(os.getenv("CHAT_ID", "0"))
 
 logging.basicConfig(level=logging.INFO)
-bot = Bot(token=BOT_TOKEN)
+
+# Подключаем встроенный прокси PythonAnywhere для Telegram API
+PROXY_URL = "http://proxy.server:3128"
+bot_session = AiohttpSession(proxy=PROXY_URL)
+bot = Bot(token=BOT_TOKEN, session=bot_session)
 dp = Dispatcher()
 
 class CEXAnomalyMonitor:
@@ -24,7 +29,8 @@ class CEXAnomalyMonitor:
         """Отслеживание резких скачков цены B2 на MEXC"""
         url = "https://api.mexc.com/api/v3/ticker/24hr?symbol=B2USDT"
         try:
-            async with session.get(url) as resp:
+            # Отправляем запрос к MEXC через прокси PythonAnywhere
+            async with session.get(url, proxy=PROXY_URL) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     current_price = float(data.get("lastPrice", 0))
