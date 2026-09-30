@@ -2,12 +2,11 @@ import os
 import asyncio
 import logging
 from typing import Dict
-from aiohttp import ClientSession, web
+from aiohttp import ClientSession
 from aiogram import Bot, Dispatcher, html
 from aiogram.filters import CommandStart
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
-# Получаем секретные ключи из настроек облака
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = int(os.getenv("CHAT_ID", "0"))
 
@@ -41,7 +40,6 @@ class CEXAnomalyMonitor:
                             if abs(price_change_pct) >= 1.5:
                                 direction = "🚀 ПАМП" if price_change_pct > 0 else "📉 ДАМП"
                                 
-                                # Ссылка на русскую версию MEXC
                                 ru_link = "https://www.mexc.com/ru-RU/exchange/B2_USDT"
                                 keyboard = InlineKeyboardMarkup(inline_keyboard=[
                                     [InlineKeyboardButton(text="📊 Открыть на MEXC (RU)", url=ru_link)]
@@ -74,30 +72,15 @@ async def command_start_handler(message: Message) -> None:
     ])
     await message.answer(
         f"Привет, {html.bold(message.from_user.full_name)}!\n"
-        f"🤖 Радар-бот запущен. Я отслеживаю аномалии. Биржа по кнопке ниже откроется на русском.",
+        f"🤖 Радар-бот запущен и отслеживает аномалии B2.",
         reply_markup=keyboard
     )
-
-# --- Заглушка для облака Render ---
-async def handle_ping(request):
-    return web.Response(text="Bot is running!")
 
 async def main():
     cex = CEXAnomalyMonitor(bot, CHAT_ID)
     asyncio.create_task(cex.run_loop())
-    asyncio.create_task(dp.start_polling(bot))
-
-    app = web.Application()
-    app.router.add_get('/', handle_ping)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    port = int(os.environ.get("PORT", 8080))
-    site = web.TCPSite(runner, '0.0.0.0', port)
-    await site.start()
-    logging.info("Бот и сервер успешно запущены!")
-    
-    while True:
-        await asyncio.sleep(3600)
+    logging.info("Бот успешно запущен!")
+    await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
